@@ -1,0 +1,104 @@
+version: '3.9'
+
+networks:
+  InceptionNetowrk:
+    driver: bridge
+
+volumes:
+  data_word:
+    driver_opts:
+        type: none
+        o: bind
+        device: /home/asekkak/data/wordpress
+  data_db:
+    driver_opts:
+        type: none
+        o: bind
+        device: /home/asekkak/data/database
+  data_adminer:
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/asekkak/data/adminer
+  
+
+services:
+  nginx:
+    build:  ./requirements/nginx
+    container_name: nginx
+    ports:
+      - '443:443'
+    volumes:
+      - data_word:/var/www/wordpress
+      - data_adminer:/var/www/adminer
+    networks:
+      - InceptionNetowrk
+    depends_on:
+      - wordpress
+      - portainer
+      - mariadb
+      - redis
+      - adminer
+      - website
+    restart: always
+    
+ 
+  wordpress:
+    build:  ./requirements/wordpress
+    container_name: wordpress
+    volumes:
+      - data_word:/var/www/wordpress
+    env_file: .env
+    networks:
+      - InceptionNetowrk
+    depends_on:
+      - mariadb
+      - redis
+
+  mariadb:
+    build: ./requirements/mariadb
+    container_name: mariadb
+    restart: always
+    volumes:
+      - data_db:/home/database
+    networks:
+      - InceptionNetowrk
+    env_file:
+      - .env
+
+  
+  redis:
+    build: ./requirements/bonus/redis
+    container_name: redis
+    networks:
+      - InceptionNetowrk
+    restart: always
+    
+  
+  adminer:
+    build: ./requirements/bonus/adminer
+    container_name: adminer
+    networks:
+      - InceptionNetowrk
+    volumes:
+      - data_adminer:/var/www/adminer
+    restart: always
+    
+
+  website:
+    build: ./requirements/bonus/website
+    container_name: website
+    networks:
+      - InceptionNetowrk
+    restart: always
+
+  portainer:
+    build: ./requirements/bonus/portainer
+    container_name: portainer
+    networks:
+      - InceptionNetowrk
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - '9000:9000'
+    restart: always
